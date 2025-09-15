@@ -10,7 +10,7 @@ import qualified Data.Char as C
 import qualified Data.Text as T
 
 isFix :: Name -> Bool
-isFix (Name s) = s == "nil" || T.all C.isNumber s
+isFix (Name s) = s == "nil" || s == "t" || T.all C.isNumber s
 
 eval :: S -> EV S
 eval (Atom n) | isFix n = pure $ Atom n
@@ -36,7 +36,7 @@ apply "EQ" = \case
     (x : y : _) -> (bool "nil" "t") <$> liftA2 (==) (eval x) (eval y)
     _ -> burn "not enough arguments given to EQ"
 apply "SET" = \case
-    (Atom n : y : _) -> enter n y
+    (Atom n : y : _) -> enter n =<< eval y
     (x : _ : _) -> burn $ psh x <> " is not an atom"
     _ -> burn "not enough arguments to SET"
 apply x@(Atom n)
@@ -52,7 +52,7 @@ pairlis :: S -> [S] -> EV [(Name, S)]
 pairlis names values = do
     n' <- lis names
     n'' <- mapM (\case Atom x -> return x; y -> burn $ psh y <> " is not an atom") n'
-    zip' n'' values
+    zip' n'' =<< mapM eval values
 
 zip' :: [a] -> [b] -> EV [(a, b)]
 zip' [] _ = pure []

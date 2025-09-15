@@ -105,7 +105,8 @@ executable prim
         base ^>=4.20.0.0,
         prim,
         haskeline,
-        mtl
+        mtl,
+        directory
 
     -- Directories containing source files.
     hs-source-dirs:   app

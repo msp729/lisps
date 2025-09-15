@@ -16,6 +16,8 @@ module Parse.Comb (
     notEof,
     unwrap,
     grab,
+    raise,
+    suppress,
 ) where
 
 import Control.Applicative (Alternative (..))
@@ -32,15 +34,18 @@ match p = Parser $ \cases
 grab :: (i -> Maybe a) -> Parser i e a
 grab f = Parser $ \cases
     [] o -> Left [Error o EndOfInput]
-    (x : xs) o -> maybe (Left [Error o (Unexpected x)]) (\a -> Right (o, a, xs)) (f x)
+    (x : xs) o -> maybe (Left [Error o (Unexpected x)]) (\a -> Right (succ o, a, xs)) (f x)
 
 mapError :: ([Error i e] -> [Error i e]) -> Parser i e a -> Parser i e a
 mapError f = Parser . fmap (fmap (first f)) . runParser
 
+suppress :: Parser i e a -> Parser i e a
+suppress = mapError (const [])
+
 char :: (Eq i) => i -> Parser i e i
 char c = Parser $ \cases
     [] o -> Left [Error o EndOfInput]
-    (x : xs) o -> if c == x then Right (o, x, xs) else Left [Error o $ Expected c x]
+    (x : xs) o -> if c == x then Right (succ o, x, xs) else Left [Error o $ Expected c x]
 
 string :: (Eq i) => [i] -> Parser i e [i]
 string = traverse char
@@ -67,3 +72,6 @@ takeWhile1 p = (:) <$> match p <*> takeWhile p
 
 unwrap :: (Eq i, Eq e) => Parser i e (Maybe a) -> Parser i e a
 unwrap = (>>= maybe empty pure)
+
+raise :: (Eq i, Eq e) => ErrorContents i e -> Parser i e a
+raise err = Parser $ \src o -> Left [Error o err]
