@@ -4,23 +4,24 @@ import qualified Data.Char as C
 import qualified Data.Text as T
 
 import Control.Applicative
+import Control.Monad
 import Parse.Comb
 import Prelude hiding (lex, takeWhile)
 
 data Token = LP | RP | DOT | QUOTE | Ident T.Text deriving (Show, Eq)
 
 isIdent :: Char -> Bool
-isIdent x = C.isPrint x && not (C.isSpace x) && not (elem x ("().'" :: String))
+isIdent x = C.isPrint x && not (C.isSpace x) && x `notElem` ("().'" :: String)
 
 lp, rp, dot, quote, ident :: (Eq e) => Parser Char e Token
 lp = LP <$ char '('
 rp = RP <$ char ')'
 dot = DOT <$ char '.'
 quote = QUOTE <$ char '\''
-ident = Ident <$> T.pack <$> takeWhile1 isIdent
+ident = Ident . T.pack <$> takeWhile1 isIdent
 
 ws :: (Eq e) => Parser Char e ()
-ws = () <$ (many $ match C.isSpace)
+ws = void (many (match C.isSpace))
 
 token :: (Eq e) => Parser Char e Token
 token = ws >> asum [lp, rp, dot, quote, ident]

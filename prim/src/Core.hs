@@ -73,7 +73,7 @@ instance Show S where
 instance Functor EV where
     -- the functor instance could probably be derived, it's just functor composition
     -- but applicative and monad are very different
-    fmap f x = EV $ \env -> fmap f <$> ev x env
+    fmap f x = EV (fmap (fmap f) . ev x)
 
 instance Applicative EV where
     -- innermost wraps it in Eff (Monad Eff), w/ no effects
