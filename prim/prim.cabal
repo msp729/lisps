@@ -76,7 +76,7 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.20.0.0,
+    build-depends:    base ^>=4.21.0.0,
                       text,
                       containers,
                       template-haskell
@@ -102,7 +102,7 @@ executable prim
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base ^>=4.20.0.0,
+        base ^>=4.21.0.0,
         prim,
         haskeline,
         mtl,
@@ -138,6 +138,6 @@ test-suite prim-test
 
     -- Test dependencies.
     build-depends:
-        base ^>=4.20.0.0,
+        base ^>=4.21.0.0,
         prim,
         QuickCheck
