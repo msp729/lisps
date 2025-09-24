@@ -33,20 +33,26 @@ apply "ATOM" = grab1 "ATOM" $ \case
     (Atom _) -> pure "t"
     _ -> pure "nil"
 apply "EQ" = \case
-    (x : y : _) -> (bool "nil" "t") <$> liftA2 (==) (eval x) (eval y)
+    (x : y : _) -> bool "nil" "t" <$> liftA2 (==) (eval x) (eval y)
     _ -> burn "not enough arguments given to EQ"
 apply "SET" = \case
     (Atom n : y : _) -> enter n =<< eval y
     (x : _ : _) -> burn $ psh x <> " is not an atom"
     _ -> burn "not enough arguments to SET"
+apply "EVAL" = grab1 "EVAL" eval
 apply x@(Atom n)
     | not (isFix n) = \args -> eval x >>= (`apply` args)
     | otherwise = pure $ burn $ psh x <> " is not a valid function name"
 apply (Cons "lambda" (Cons "nil" lbody)) = (`locals` eval lbody) <=< pairlis "nil"
 apply (Cons "lambda" (Cons arg@(Atom _) lbody)) = apply (Cons "lambda" (Cons (Cons arg "nil") lbody))
 apply (Cons "lambda" (Cons argl lbody)) = (`locals` eval lbody) <=< pairlis argl
+apply (Cons "mu" (Cons (Atom argn) mbody)) = \args -> eval =<< locals [(argn, unlis args)] (eval mbody)
+apply (Cons "mu" (Cons argl mbody)) = eval <=< (`locals` eval mbody) <=< pairlis argl
 apply fn@(Q _) = const $ burn $ psh fn <> " is not a function"
 apply fn = (eval fn >>=) . flip apply
+
+unlis :: [S] -> S
+unlis = foldr Cons "nil"
 
 pairlis :: S -> [S] -> EV [(Name, S)]
 pairlis names values = do
@@ -57,7 +63,7 @@ pairlis names values = do
 zip' :: [a] -> [b] -> EV [(a, b)]
 zip' [] _ = pure []
 zip' _ [] = burn "not enough arguments provided"
-zip' (x : xs) (y : ys) = fmap ((:) (x, y)) (zip' xs ys)
+zip' (x : xs) (y : ys) = fmap ((x, y) :) (zip' xs ys)
 
 grab1 :: T.Text -> (S -> EV S) -> [S] -> EV S
 grab1 fn _ [] = burn $ "no argument given to " <> fn
